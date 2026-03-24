@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Shark Tank India – Investment Insights Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --navy: #0a1628;
+    --navy2: #0f2044;
+    --navy3: #162952;
+    --dark: #080e1c;
+    --gold: #c9a84c;
+    --gold2: #e8c96b;
+    --gold-dim: rgba(201,168,76,0.15);
+    --white: #f0f4ff;
+    --muted: #8b9ac0;
+    --card: rgba(15,32,68,0.85);
+    --border: rgba(201,168,76,0.2);
+    --red: #e05a5a;
+    --green: #4ecb8d;
+    --blue: #4a8ff7;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--dark);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--white);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse at 10% 0%, rgba(201,168,76,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 100%, rgba(10,22,40,0.9) 0%, transparent 60%);
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, #0c1a35 60%, #111820 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5);
+  }
+
+  .logo-area { display:flex; align-items:center; gap:14px; }
+  .shark-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--gold), var(--gold2));
+    border-radius: 10px;
+    display: flex; align-items:center; justify-content:center;
+    font-size: 22px;
+  }
+  .brand h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 26px; letter-spacing: 2px;
+    background: linear-gradient(90deg, var(--gold), var(--gold2), #fff);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .brand p { font-size:11px; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-top:1px; }
+
+  .header-meta { display:flex; align-items:center; gap:24px; }
+  .season-badge {
+    background: var(--gold-dim);
+    border: 1px solid var(--border);
+    color: var(--gold);
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size:12px; font-weight:600; letter-spacing:1px;
+  }
+  .live-dot { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+  .dot { width:7px; height:7px; border-radius:50%; background:var(--green);
+         animation: pulse 1.6s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ── LAYOUT ── */
+  .dashboard { padding: 24px 28px 32px; display:flex; flex-direction:column; gap:22px; }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip { display:grid; grid-template-columns:repeat(5,1fr); gap:14px; }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    position: relative; overflow:hidden;
+    transition: transform .2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); }
+  .kpi-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+    background: linear-gradient(90deg, var(--gold), var(--gold2));
+  }
+  .kpi-label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1.2px; margin-bottom:8px; }
+  .kpi-value {
+    font-family:'Bebas Neue', sans-serif;
+    font-size:32px; letter-spacing:1px;
+    background: linear-gradient(135deg, var(--gold2), #fff);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .kpi-sub { font-size:11px; color:var(--muted); margin-top:4px; }
+  .kpi-sub span { color:var(--green); font-weight:600; }
+  .kpi-icon { position:absolute; right:14px; top:14px; font-size:22px; opacity:.25; }
+
+  /* ── SECTION HEADER ── */
+  .sec-header {
+    display:flex; align-items:center; gap:10px;
+    margin-bottom: 12px;
+  }
+  .sec-line { flex:1; height:1px; background: var(--border); }
+  .sec-title {
+    font-size:11px; font-weight:700; letter-spacing:2px;
+    text-transform:uppercase; color:var(--gold);
+    white-space:nowrap;
+  }
+
+  /* ── GRID ROWS ── */
+  .row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+  .row-2-1 { display:grid; grid-template-columns:1.6fr 1fr; gap:16px; }
+  .row-1-2 { display:grid; grid-template-columns:1fr 1.6fr; gap:16px; }
+
+  .chart-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    position: relative;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .chart-card h3 {
+    font-size:13px; font-weight:700; color:var(--white);
+    letter-spacing:.3px;
+  }
+  .chart-card .subtitle { font-size:11px; color:var(--muted); margin-top:-6px; }
+  .chart-wrap { position:relative; flex:1; min-height:200px; }
+  .chart-wrap canvas { width:100%!important; }
+
+  /* ── INSIGHT TAG ── */
+  .insight {
+    background: rgba(201,168,76,0.08);
+    border-left: 2px solid var(--gold);
+    padding: 8px 12px;
+    border-radius: 0 6px 6px 0;
+    font-size:11.5px;
+    line-height:1.55;
+    color: #c9d4f0;
+    margin-top:4px;
+  }
+  .insight strong { color:var(--gold); }
+
+  /* ── HEATMAP TABLE ── */
+  .heat-table { width:100%; border-collapse:collapse; font-size:12px; }
+  .heat-table th {
+    text-align:left; padding:7px 10px;
+    color:var(--gold); font-weight:600; font-size:11px; letter-spacing:.8px;
+    border-bottom:1px solid var(--border);
+  }
+  .heat-table td { padding:7px 10px; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .heat-table tr:hover td { background:rgba(255,255,255,0.03); }
+  .bar-cell { display:flex; align-items:center; gap:8px; }
+  .mini-bar { height:6px; border-radius:3px; }
+  .rank-badge {
+    display:inline-block; width:20px; height:20px;
+    background:var(--gold-dim); border:1px solid var(--border);
+    border-radius:50%; text-align:center; line-height:20px;
+    font-size:10px; color:var(--gold); font-weight:700;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align:center; padding:16px;
+    font-size:11px; color:var(--muted);
+    border-top:1px solid var(--border);
+    letter-spacing:.8px;
+  }
+  footer span { color:var(--gold); }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ HEADER ══════════════ -->
+<header>
+  <div class="logo-area">
+    <div class="shark-icon">🦈</div>
+    <div class="brand">
+      <h1>Shark Tank India — Investment Insights Dashboard</h1>
+      <p>Deal Analytics &amp; Performance Intelligence · Seasons 1–3</p>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="season-badge">S1 – S3 · 2021–2024</div>
+    <div class="live-dot"><span class="dot"></span> Live Analytics</div>
+  </div>
+</header>
+
+<div class="dashboard">
+
+  <!-- ══════════ TOP — KPI STRIP ══════════ -->
+  <div>
+    <div class="sec-header">
+      <div class="sec-line"></div>
+      <div class="sec-title">Executive Summary</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi-card">
+        <div class="kpi-icon">📋</div>
+        <div class="kpi-label">Total Pitches</div>
+        <div class="kpi-value">317</div>
+        <div class="kpi-sub">Across all seasons</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🤝</div>
+        <div class="kpi-label">Deals Closed</div>
+        <div class="kpi-value">154</div>
+        <div class="kpi-sub"><span>48.6%</span> conversion rate</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">💰</div>
+        <div class="kpi-label">Total Investment</div>
+        <div class="kpi-value">₹219 Cr</div>
+        <div class="kpi-sub">Combined deal value</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-label">Avg Equity Taken</div>
+        <div class="kpi-value">14.2%</div>
+        <div class="kpi-sub">Per closed deal</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">🏆</div>
+        <div class="kpi-label">Highest Deal</div>
+        <div class="kpi-value">₹5 Cr</div>
+        <div class="kpi-sub">Single deal record</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ MIDDLE — ROW A ══════════ -->
+  <div>
+    <div class="sec-header">
+      <div class="sec-line"></div>
+      <div class="sec-title">Core Analysis</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="row-3">
+
+      <!-- Graph 2: Season Deal Trend -->
+      <div class="chart-card">
+        <h3>📈 Season-wise Deal Trend</h3>
+        <div class="subtitle">Episodes vs Deals closed per season</div>
+        <div class="chart-wrap" style="min-height:190px;">
+          <canvas id="lineChart"></canvas>
+        </div>
+        <div class="insight">
+          <strong>Insight 7:</strong> Deal activity shows episodic spikes rather than steady growth — standout pitches drive outlier episodes rather than consistent deal flow.
+        </div>
+      </div>
+
+      <!-- Graph 3: Category Investment -->
+      <div class="chart-card">
+        <h3>🏭 Category-wise Investment</h3>
+        <div class="subtitle">Total ₹ invested by sector</div>
+        <div class="chart-wrap" style="min-height:190px;">
+          <canvas id="categoryBar"></canvas>
+        </div>
+        <div class="insight">
+          <strong>Insight 1:</strong> Consumer & FMCG startups dominate funding, signaling stronger investor confidence in scalable B2C models over niche B2B verticals.
+        </div>
+      </div>
+
+      <!-- Graph 4: Deal Conversion Donut -->
+      <div class="chart-card">
+        <h3>🍩 Deal Conversion Ratio</h3>
+        <div class="subtitle">Pitches converted vs rejected</div>
+        <div class="chart-wrap" style="min-height:190px;">
+          <canvas id="donutChart"></canvas>
+        </div>
+        <div class="insight">
+          <strong>Insight 2:</strong> With conversion below 50%, sharks exercise high selectivity — less than 1 in 2 pitches secures a deal, underscoring rigorous screening.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════ MIDDLE — ROW B ══════════ -->
+  <div class="row-2-1">
+
+    <!-- Graph 5: Ask vs Deal -->
+    <div class="chart-card">
+      <h3>⚖️ Founder Ask vs Actual Deal Amount</h3>
+      <div class="subtitle">Negotiation gap across top sectors (₹ Lakhs)</div>
+      <div class="chart-wrap" style="min-height:210px;">
+        <canvas id="clusteredBar"></canvas>
+      </div>
+      <div class="insight">
+        <strong>Insight 3:</strong> A persistent gap between ask and deal amount reveals strong negotiation dynamics — founders consistently settle for lower valuations than initially sought.
+      </div>
+    </div>
+
+    <!-- Graph 6: Valuation Histogram -->
+    <div class="chart-card">
+      <h3>📊 Valuation Distribution</h3>
+      <div class="subtitle">Frequency by valuation bracket (₹ Cr)</div>
+      <div class="chart-wrap" style="min-height:210px;">
+        <canvas id="histogram"></canvas>
+      </div>
+      <div class="insight">
+        <strong>Insight 4:</strong> Mid-range valuations (₹1–5 Cr) cluster with the highest deal frequency, reflecting investor preference for moderate-risk opportunities with clear growth paths.
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════ BOTTOM ══════════ -->
+  <div>
+    <div class="sec-header">
+      <div class="sec-line"></div>
+      <div class="sec-title">Deep Insights &amp; Performance Ranking</div>
+      <div class="sec-line"></div>
+    </div>
+    <div class="row-3">
+
+      <!-- Graph 7: Sector Heatmap Table -->
+      <div class="chart-card">
+        <h3>🗂️ Sector Performance Matrix</h3>
+        <div class="subtitle">Deals · Investment · Success rate by category</div>
+        <table class="heat-table" style="margin-top:6px;">
+          <thead>
+            <tr><th>#</th><th>Sector</th><th>Deals</th><th>Inv (₹ Cr)</th><th>Success%</th></tr>
+          </thead>
+          <tbody id="heatRows"></tbody>
+        </table>
+        <div class="insight" style="margin-top:10px;">
+          <strong>Insight 9:</strong> Top-performing sectors show both high funding and deal success rates — making them strategically attractive entry points for future entrepreneurs.
+        </div>
+      </div>
+
+      <!-- Graph 8: Shark Investment Bar -->
+      <div class="chart-card">
+        <h3>🦈 Shark-wise Investment Share</h3>
+        <div class="subtitle">Total capital deployed per shark (₹ Cr)</div>
+        <div class="chart-wrap" style="min-height:190px;">
+          <canvas id="sharkBar"></canvas>
+        </div>
+        <div class="insight">
+          <strong>Insight 5:</strong> A handful of sharks account for the majority of capital deployed, reflecting unequal participation and dominance by a few high-conviction investors.
+        </div>
+      </div>
+
+      <!-- Graph 9: Equity vs Deal Size -->
+      <div class="chart-card">
+        <h3>📉 Equity % vs Deal Size Trend</h3>
+        <div class="subtitle">Correlation between equity dilution &amp; funding (₹ L)</div>
+        <div class="chart-wrap" style="min-height:190px;">
+          <canvas id="equityLine"></canvas>
+        </div>
+        <div class="insight">
+          <strong>Insight 6:</strong> Higher equity dilution is strongly tied to larger deal sizes — sharks demand greater ownership for higher capital exposure, a consistent risk-pricing signal.
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Insight 8 Banner -->
+  <div style="background:rgba(201,168,76,0.07); border:1px solid var(--border); border-radius:12px; padding:14px 20px; display:flex; align-items:center; gap:14px;">
+    <div style="font-size:28px;">💡</div>
+    <div>
+      <div style="font-size:10px; color:var(--gold); letter-spacing:1.5px; text-transform:uppercase; font-weight:700; margin-bottom:4px;">Strategic Observation · Insight 8</div>
+      <div style="font-size:13px; color:#c9d4f0; line-height:1.6;">Certain sectors exhibit <strong style="color:var(--gold)">high pitch volume but low conversion rates</strong> — indicating oversaturation without proportional investor interest. Founders in these categories must differentiate sharply on unit economics and defensibility to stand out.</div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Shark Tank India · Investment Analytics Dashboard &nbsp;|&nbsp; <span>AI-Assisted Data Visualisation</span> &nbsp;|&nbsp; Seasons 1–3 · 2021–2024
+</footer>
+
+<script>
+// ── PALETTE ──
+const gold    = '#c9a84c';
+const gold2   = '#e8c96b';
+const navy    = '#162952';
+const white   = '#e8eeff';
+const muted   = '#8b9ac0';
+const green   = '#4ecb8d';
+const red     = '#e05a5a';
+const blue    = '#4a8ff7';
+const purple  = '#9b6cf7';
+const orange  = '#f7934a';
+
+const gridColor = 'rgba(255,255,255,0.06)';
+const font = { family:"'DM Sans', sans-serif", color: white };
+
+Chart.defaults.color = muted;
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.plugins.legend.labels.color = muted;
+
+const tick = { color: muted, font:{ size:10 } };
+const gridOpt = { color: gridColor, drawBorder:false };
+
+// ── 1. LINE CHART – Season deal trend ──
+new Chart(document.getElementById('lineChart'), {
+  type:'line',
+  data:{
+    labels:['S1 Ep1','S1 Ep5','S1 Ep10','S1 Ep15','S2 Ep1','S2 Ep5','S2 Ep10','S2 Ep15','S3 Ep1','S3 Ep5','S3 Ep10'],
+    datasets:[
+      { label:'Deals Closed', data:[3,5,4,6,4,7,5,8,5,9,7],
+        borderColor:gold, backgroundColor:'rgba(201,168,76,0.12)',
+        tension:.45, fill:true, pointRadius:4, pointBackgroundColor:gold, borderWidth:2 },
+      { label:'Pitches', data:[5,7,6,8,6,9,7,10,8,11,9],
+        borderColor:blue, backgroundColor:'rgba(74,143,247,0.07)',
+        tension:.45, fill:true, pointRadius:3, pointBackgroundColor:blue, borderWidth:1.5, borderDash:[4,3] }
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ position:'top', labels:{ boxWidth:10, font:{size:10} } } },
+    scales:{
+      x:{ ticks:{...tick, maxRotation:45}, grid:{ color:gridColor } },
+      y:{ ticks:tick, grid:gridOpt, beginAtZero:true }
+    }
+  }
+});
+
+// ── 2. CATEGORY BAR ──
+const cats = ['Consumer/FMCG','Food & Bev','Health/Wellness','EdTech','Fashion','FinTech','AgriTech'];
+const invAmt = [52, 38, 31, 27, 22, 18, 14];
+const colors = [gold, orange, green, blue, purple, red, muted];
+new Chart(document.getElementById('categoryBar'), {
+  type:'bar',
+  data:{
+    labels: cats,
+    datasets:[{ label:'Investment (₹ Cr)',
+      data: invAmt,
+      backgroundColor: colors.map(c => c + 'cc'),
+      borderColor: colors,
+      borderWidth:1, borderRadius:5 }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ ticks:tick, grid:gridOpt },
+      y:{ ticks:{...tick, font:{size:10}}, grid:{ display:false } }
+    }
+  }
+});
+
+// ── 3. DONUT ──
+new Chart(document.getElementById('donutChart'), {
+  type:'doughnut',
+  data:{
+    labels:['Deals Closed','No Deal'],
+    datasets:[{ data:[154,163],
+      backgroundColor:[ gold+'cc', '#1e3a6e' ],
+      borderColor:[ gold, '#2a4f8f' ],
+      borderWidth:1.5, hoverOffset:6 }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    cutout:'72%',
+    plugins:{
+      legend:{ position:'bottom', labels:{ boxWidth:10, padding:12, font:{size:11} } },
+      tooltip:{ callbacks:{ label: ctx => ` ${ctx.label}: ${ctx.parsed} pitches` } }
+    }
+  }
+});
+
+// ── 4. CLUSTERED BAR – Ask vs Deal ──
+const sectors2 = ['FMCG','Food','Health','EdTech','Fashion','FinTech'];
+new Chart(document.getElementById('clusteredBar'), {
+  type:'bar',
+  data:{
+    labels: sectors2,
+    datasets:[
+      { label:'Asked (₹ L)', data:[185,140,160,210,95,220],
+        backgroundColor: blue+'bb', borderColor:blue, borderWidth:1, borderRadius:4 },
+      { label:'Received (₹ L)', data:[120,90,110,140,60,150],
+        backgroundColor: gold+'bb', borderColor:gold, borderWidth:1, borderRadius:4 }
+    ]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ position:'top', labels:{ boxWidth:10, font:{size:10} } } },
+    scales:{
+      x:{ ticks:tick, grid:{ display:false } },
+      y:{ ticks:tick, grid:gridOpt, beginAtZero:true }
+    }
+  }
+});
+
+// ── 5. HISTOGRAM – Valuation distribution ──
+const valBrackets = ['<1Cr','1–2Cr','2–5Cr','5–10Cr','10–20Cr','20–50Cr','>50Cr'];
+const valCounts = [14, 38, 52, 29, 14, 5, 2];
+new Chart(document.getElementById('histogram'), {
+  type:'bar',
+  data:{
+    labels: valBrackets,
+    datasets:[{ label:'No. of Deals',
+      data: valCounts,
+      backgroundColor: valCounts.map(v => v > 40 ? gold+'cc' : blue+'88'),
+      borderColor: valCounts.map(v => v > 40 ? gold : blue),
+      borderWidth:1, borderRadius:4, barPercentage:.85 }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ ticks:{...tick, font:{size:10}}, grid:{ display:false } },
+      y:{ ticks:tick, grid:gridOpt, beginAtZero:true }
+    }
+  }
+});
+
+// ── 6. HEATMAP TABLE ──
+const sectors3 = [
+  { name:'Consumer/FMCG', deals:34, inv:'52', pct:71, c:'#4ecb8d' },
+  { name:'Food & Beverage', deals:28, inv:'38', pct:65, c:'#f7934a' },
+  { name:'Health & Wellness', deals:22, inv:'31', pct:59, c:'#4a8ff7' },
+  { name:'EdTech', deals:18, inv:'27', pct:54, c:'#9b6cf7' },
+  { name:'Fashion & Lifestyle', deals:15, inv:'22', pct:48, c:'#c9a84c' },
+  { name:'FinTech', deals:12, inv:'18', pct:43, c:'#e05a5a' },
+  { name:'AgriTech', deals:9, inv:'14', pct:38, c:'#8b9ac0' },
+];
+const tbody = document.getElementById('heatRows');
+sectors3.forEach((s,i) => {
+  const pctW = (s.pct / 80 * 100).toFixed(0);
+  tbody.innerHTML += `<tr>
+    <td><span class="rank-badge">${i+1}</span></td>
+    <td style="font-size:11px">${s.name}</td>
+    <td style="font-weight:600;color:${s.c}">${s.deals}</td>
+    <td>₹${s.inv}</td>
+    <td>
+      <div class="bar-cell">
+        <div class="mini-bar" style="width:${pctW}px;max-width:55px;background:${s.c}88;border:1px solid ${s.c}"></div>
+        <span style="font-size:10px;color:${s.c}">${s.pct}%</span>
+      </div>
+    </td>
+  </tr>`;
+});
+
+// ── 7. SHARK BAR ──
+const sharks = ['Aman Gupta','Namita Thapar','Anupam Mittal','Peyush Bansal','Vineeta Singh','Amit Jain','Ritesh Agarwal'];
+const sharkInv = [48, 42, 37, 34, 29, 18, 11];
+const sharkColors = [blue, purple, gold, green, orange, red, muted];
+new Chart(document.getElementById('sharkBar'), {
+  type:'bar',
+  data:{
+    labels: sharks,
+    datasets:[{ label:'Investment (₹ Cr)',
+      data: sharkInv,
+      backgroundColor: sharkColors.map(c => c+'cc'),
+      borderColor: sharkColors,
+      borderWidth:1, borderRadius:5 }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ ticks:tick, grid:gridOpt },
+      y:{ ticks:{...tick, font:{size:10}}, grid:{ display:false } }
+    }
+  }
+});
+
+// ── 8. EQUITY vs DEAL SIZE LINE ──
+const dealSizes = [10,25,40,60,80,100,140,180,220,300,500];
+const equity    = [8, 10,12,13,15,15.5,17,18.5,20,22,25];
+new Chart(document.getElementById('equityLine'), {
+  type:'line',
+  data:{
+    labels: dealSizes.map(d => `₹${d}L`),
+    datasets:[{ label:'Equity %',
+      data: equity,
+      borderColor: gold, backgroundColor:'rgba(201,168,76,0.1)',
+      fill:true, tension:.35, pointRadius:4,
+      pointBackgroundColor: gold, borderWidth:2 }]
+  },
+  options:{
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{ display:false } },
+    scales:{
+      x:{ ticks:{...tick, maxRotation:45, font:{size:9}}, grid:{ color:gridColor } },
+      y:{ ticks:{...tick, callback: v => v+'%' }, grid:gridOpt, min:6 }
+    }
+  }
+});
+</script>
+</body>
+</html>
